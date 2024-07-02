@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Content</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/EnterQuiz.css' %}">
+</head>
+<body>
+    <header>
+        <a href="{% url 'home' %}" class="logo">LoomingCode</a>
+        <nav class="navigation" id="nav-middle">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'home' %}#courses">Courses</a>
+            <a href="{% url 'home' %}#services">Services</a>
+            <a href="{% url 'home' %}#about">About</a>
+            <a href="{% url 'home' %}#contact">Contact</a>
+        </nav>
+        <nav class="navigation" id="header-icons">
+            <a href="{% url 'profile' %}" id="profile"><i class="fa-regular fa-user fa-lg"></i></a>
+            <a href="{% url 'login' %}"><i class="fa fa-right-to-bracket fa-lg"></i></a>
+            <a href="{% url 'logout_page' %}"><i class="fa-solid fa-right-from-bracket fa-lg"></i></a>
+        </nav>
+    </header>
+
+    <div class="toolbar">
+        <div class="tooltip">
+            <button class="toolbarelements" data-element="code block" onclick="func(this)"  disabled><img src="{%static 'images/code.png' %}"></button>
+            <span class="tooltiptext">code block</span>
+        </div>
+
+        <div class="tooltip">
+            <button class="toolbarelements" data-element="code-word" onclick="func(this)"  disabled><img src="{%static 'images/code word.png'%}"></button>
+            <span class="tooltiptext">code word</span>
+        </div>
+
+        <div class="tooltip">
+            <button class="toolbarelements" data-element="horizental-line" onclick="func(this)" disabled><img src="{% static 'images/hr.png' %}"></button>
+            <span class="tooltiptext">horizental line</span>
+        </div>
+    </div>
+
+    <form id="quizForm" method="POST" action="{% url 'save_quiz' %}">
+        {% csrf_token %}
+        <input type="hidden" id="Course-Name" name="Course_name" value="{{ course_name }}">
+        
+        <div class="message" id="message">
+            <!-- Form fields here -->
+            <div class="label-and-feild-container"> 
+                <label for="QuestionNumber"><b>Question number:</b></label>
+                <input type="number" id="QuestionNumber" name="question_number" required>
+            </div>
+            <div class="label-and-feild-container"> 
+                <label for="QuestionMark"><b>Question mark:</b></label>
+                <input type="number" id="QuestionMark" name="question_mark" required>
+            </div>
+            <div class="label-and-feild-container"> 
+                <label for="QuestionTopics"><b>Question topics:</b></label>
+                <select id="QuestionTopics" name="question_topics" required multiple>
+                    {% for topic in topics %}
+                    <option value="{{ topic.id }}">{{ topic.topic_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="label-and-feild-container"> 
+                <label for="QuestionSectionsCount"><b>Question sections count:</b></label>
+                <input type="number" id="QuestionSectionsCount" name="question_sections_count" required>
+            </div>
+            <div>
+                <center>
+                    <button type="button" id="enterQuestion-button" data-element="enter-question" onclick="func(this)">Enter question</button>
+                    <span></span>
+                    <button type="button" id="CANCEL-button" onclick="closeMessage()">Cancel</button>
+                </center>
+            </div>
+        </div>
+    
+        <div id="editor" class="editor" contenteditable></div>
+        <div class="savebtn-cancelbtn-container">
+            <input type="hidden" id="correctAnswers" name="correct_answers[]">
+            <button type="button" class="beautiful-button" id="next-question" onclick="nextQuestion()">Next question</button>
+            <button type="submit" class="beautiful-button" id="generate-html">Save and return</button>
+        </div>
+    </form>
+    
+
+
+    <script>
+        // Combined variable declarations
+        let qustionNumber; // Corrected typo in variable name
+        let questionNumber;
+        let questionMark;
+        let QuestionTopics = []; // Corrected typo in variable name
+        let questionTopics = [];
+        let questionSectionsCount;
+        let answerOptions;
+    
+        // Select elements
+        const editor = document.getElementById('editor');
+        const editorElement = document.getElementById('editor');
+        const generateHTMLButton = document.getElementById('generate-html');
+        const quizForm = document.getElementById('quizForm');
+        
+        editor.focus();
+    
+        // Function to handle button clicks and generate HTML content
+        function func(button) {
+            event.stopPropagation(); // Stop propagation of the click event
+    
+            const elementType = button.getAttribute('data-element');
+            let elementHtml;
+    
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            const parentElement = range.startContainer.parentElement;
+    
+            switch (elementType) {
+                case 'code block':
+                    elementHtml = '<div class="outer-container"><i class="fas fa-code code-icon"></i><div class="code-box"><div class="code-content"><br></div></div></div><br>';
+                    break;
+    
+                case 'code-word':
+                    elementHtml = '<code class="code-words">&nbsp;<br></code><br>';
+                    break;
+    
+                case 'horizental-line':
+                    elementHtml = '<hr><br>';
+                    break;
+    
+                case 'enter-question':
+                    qustionNumber = document.getElementById("QuestionNumber").value; // Typo corrected
+                    questionNumber = qustionNumber;
+                    questionMark = document.getElementById("QuestionMark").value;
+                    QuestionTopics = Array.from(document.getElementById("QuestionTopics").selectedOptions).map(option => option.value);
+                    questionTopics = QuestionTopics;
+                    questionSectionsCount = document.getElementById("QuestionSectionsCount").value;
+    
+                    var options = document.getElementById("QuestionTopics").options;
+                    var selected = false; // Flag
+                    for (let i = 0; i < options.length; i++) {
+                        if (options[i].selected == true) {
+                            selected = true;
+                            break;
+                        }
+                    }
+    
+                    if (qustionNumber == "" || questionMark == "" || selected == false || questionSectionsCount == "")
+                        alert("Please fill the empty field(s).");
+                    else {
+                        enterQuestion();
+                        addQuestionToEditor();
+                    }
+                    break;
+            }
+    
+            if (elementHtml) {
+                const newNode = document.createElement('div');
+                newNode.innerHTML = elementHtml;
+                range.insertNode(newNode);
+                range.setStartAfter(newNode);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
+    
+        function generateAnswerField(numItems) {
+            let checkBoxHtml = "";
+            for (let i = 1; i <= numItems; i++) {
+                checkBoxHtml += '<div><input type="radio" name="answer-variable">&nbsp;&nbsp;&nbsp;<br></div>';
+            }
+            checkBoxHtml += '<br>';
+            return checkBoxHtml;
+        }
+    
+        function nextQuestion() {
+            const editorContent = editorElement.innerHTML.trim();
+            if (editorContent) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'html_content';
+                input.value = editorContent;
+                quizForm.appendChild(input);
+    
+                // Create inputs for each section's options
+                for (let i = 0; i < questionSectionsCount; i++) {
+                    const options = document.querySelectorAll(`input[name="answer-variable${questionNumber}${i + 1}"]`);
+                    options.forEach(option => {
+                        const optionInput = document.createElement('input');
+                        optionInput.type = 'hidden';
+                        optionInput.name = `question_section_${i + 1}_options`;
+                        optionInput.value = option.nextElementSibling.innerText.trim();
+                        quizForm.appendChild(optionInput);
+                    });
+                }
+    
+                quizForm.submit();
+            } else {
+                alert('Please enter content.');
+            }
+    
+            // Disable toolbar buttons
+            var buttons = document.querySelectorAll(".toolbarelements");
+            buttons.forEach(function (button) {
+                button.disabled = true;
+            });
+    
+            // Disable lower right buttons
+            var lowerRightButtons = document.querySelectorAll(".beautiful-button");
+            lowerRightButtons.forEach(function (button) {
+                button.disabled = true;
+            });
+    
+            // Reappear the message
+            let message = document.querySelector(".message");
+            message.style.display = "block";
+        }
+    
+        function enterQuestion() {
+            console.log(questionNumber);
+            console.log(questionMark);
+            questionTopics.forEach(topic => console.log(topic));
+            console.log(questionSectionsCount);
+    
+            // Enable toolbar buttons
+            var buttons = document.querySelectorAll(".toolbarelements");
+            buttons.forEach(function (button) {
+                button.disabled = false;
+            });
+    
+            // Enable lower right buttons
+            var lowerRightButtons = document.querySelectorAll(".beautiful-button");
+            lowerRightButtons.forEach(function (button) {
+                button.disabled = false;
+            });
+    
+            // Hide the message
+            let message = document.querySelector(".message");
+            message.style.display = "none";
+    
+            // Hide form elements
+            document.querySelector('label[for="QuestionNumber"]').style.display = 'none';
+            document.getElementById("QuestionNumber").style.display = "none";
+            document.querySelector('label[for="QuestionMark"]').style.display = 'none';
+            document.getElementById("QuestionMark").style.display = "none";
+            document.querySelector('label[for="QuestionTopics"]').style.display = 'none';
+            document.getElementById("QuestionTopics").style.display = "none";
+            document.querySelector('label[for="QuestionSectionsCount"]').style.display = 'none';
+            document.getElementById("QuestionSectionsCount").style.display = "none";
+            document.getElementById("enterQuestion-button").style.display = "none";
+            document.querySelector('span').style.display = 'none';
+            document.getElementById("CANCEL-button").style.display = "none";
+        }
+    
+        function addQuestionToEditor() {
+            let content = `<div class="text">Q${questionNumber}: </div><br><br>`;
+            for (let i = 1; i <= questionSectionsCount; i++) {
+                const sectionNumber = prompt("Enter question section number");
+                content += `${sectionNumber}. <br>`;
+                const ansOptionsNum = prompt("Enter number of answer options");
+                const name = `answer-variable${questionNumber}${i}`;
+                let checkBoxHtml = "";
+                for (let j = 1; j <= ansOptionsNum; j++) {
+                    const id = `${questionNumber}${i}${j}`;
+                    checkBoxHtml += `<div><input type="radio" name="${name}" id="${id}" onclick="setCorrectAnswer(${i}, this.id)"><label contenteditable>&nbsp;&nbsp;&nbsp;<br></div>`;
+                }
+                checkBoxHtml += '<br>';
+                content += checkBoxHtml;
+            }
+            editorElement.innerHTML = content;
+        }
+    
+        function setCorrectAnswer(sectionIndex, id) {
+            let correctAnswers = document.getElementById('correctAnswers').value.split(',');
+            correctAnswers[sectionIndex - 1] = id;
+            document.getElementById('correctAnswers').value = correctAnswers.join(',');
+        }
+    
+        function closeMessage() {
+            let message = document.querySelector(".message");
+            message.style.display = "none";
+        }
+    
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById("message").style.display = "block";
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const quizForm = document.getElementById('quizForm');
+        
+            quizForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent default form submission
+        
+                // Serialize form data
+                const formData = new FormData(quizForm);
+                const saveQuizUrl = "{% url 'save_quiz' %}";
+        
+                // Send POST request via AJAX
+                fetch(saveQuizUrl, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+               .then(data => {
+                if (data.success) {
+                    // Redirect to dynamic_quiz view with course name
+                    const courseName = data.course_name;
+                    console.log('Redirecting to dynamic_quiz with course:', courseName); // Debug log
+                    alert('Redirecting to dynamic_quiz with course: ' + courseName); // Debug alert
+                    window.location.href = `/EnterQuiz/?course=${encodeURIComponent(courseName)}`;
+                } else {
+                    // Handle error case
+                    if (data.error_message) {
+                        alert(data.error_message);
+                    } else {
+                        alert('Error saving quiz. Please try again.');
+                    }
+                }
+            })
+
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error saving quiz. Please try again.');
+                });
+            });
+        });
+        
+    </script>
+    
+        
+</body>
+</html>

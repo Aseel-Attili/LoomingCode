@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Content</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/dynamic.css' %}">
+</head>
+<body>
+    <header>
+        <a href="{% url 'home' %}" class="logo">LoomingCode</a>
+        <nav class="navigation" id="nav-middle">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'home' %}#courses">Courses</a>
+            <a href="{% url 'home' %}#services">Services</a>
+            <a href="{% url 'home' %}#about">About</a>
+            <a href="{% url 'home' %}#contact">Contact</a>
+        </nav>
+        <nav class="navigation" id="header-icons">
+            <a href="{% url 'profile' %}" id="profile"><i class="fa-regular fa-user fa-lg"></i></a>
+            <a href="{% url 'login' %}"><i class="fa fa-right-to-bracket fa-lg"></i></a>
+            <a href="{% url 'logout_page' %}"><i class="fa-solid fa-right-from-bracket fa-lg"></i></a>
+        </nav>
+    </header>
+
+    <div class="toolbar">
+        <div class="tooltip">
+            <button class="toolbarelements" data-element="heading-one" onclick="func(this)">
+                <img src="{% static 'images/h1.png' %}">
+            </button>
+            <span class="tooltiptext">Heading 1</span>
+        </div>
+        <div class="tooltip">
+            <button class="toolbarelements" data-element="heading-two" onclick="func(this)">
+                <img src="{% static 'images/h2.png' %}">
+            </button>
+            <span class="tooltiptext">Heading 2</span>
+        </div>
+        <div class="tooltip">
+            <button class="toolbarelements" data-element="text" onclick="func(this)">
+                <img src="{% static 'images/text.png' %}">
+            </button>
+            <span class="tooltiptext">Text</span>
+        </div>
+        <div class="tooltip">
+            <button class="toolbarelements" data-element="image" onclick="func(this)">
+                <img src="{% static 'images/image.png' %}">
+            </button>
+            <span class="tooltiptext">Image</span>
+        </div>
+        <div class="tooltip">
+            <button class="toolbarelements" data-element="code block" onclick="func(this)">
+                <img src="{% static 'images/code.png' %}">
+            </button>
+            <span class="tooltiptext">Code Block</span>
+        </div>
+        <div class="tooltip">
+            <button class="toolbarelements" data-element="table" onclick="func(this)">
+                <img src="{% static 'images/table.png' %}">
+            </button>
+            <span class="tooltiptext">Table</span>
+        </div>
+        <div class="tooltip">
+            <button class="toolbarelements" data-element="list" onclick="func(this)">
+                <img src="{% static 'images/list.png' %}">
+            </button>
+            <span class="tooltiptext">List</span>
+        </div>
+        <div class="tooltip">
+            <button class="toolbarelements" data-element="note" onclick="func(this)">
+                <img src="{% static 'images/notes.png' %}">
+            </button>
+            <span class="tooltiptext">Note</span>
+        </div>
+        <div class="tooltip">
+            <button class="toolbarelements" data-element="code-word" onclick="func(this)">
+                <img src="{% static 'images/code word.png' %}">
+            </button>
+            <span class="tooltiptext">Code Word</span>
+        </div>
+        <div class="tooltip">
+            <button class="toolbarelements" data-element="horizental-line" onclick="func(this)">
+                <img src="{% static 'images/hr.png' %}">
+            </button>
+            <span class="tooltiptext">Horizontal Line</span>
+        </div>
+        <div class="tooltip">
+            <button class="toolbarelements" data-element="hyper-link" onclick="func(this)">
+                <img src="{% static 'images/link.png' %}">
+            </button>
+            <span class="tooltiptext">Add Hyperlink</span>
+        </div>
+    </div>
+
+    <div id="editor" class="editor" contenteditable="true"></div>
+
+    <div class="savebtn-cancelbtn-container">
+        <button class="beautiful-button" id="generate-html">Done</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const editorElement = document.getElementById('editor');
+
+            // Retrieve the topic code HTML from Django template context
+            const topicCodeHTML = `{% if topic.code_html %}{{ topic.code_html|safe }}{% else %}{% endif %}`;
+        
+            // Set the editor's content to the retrieved HTML
+            editorElement.innerHTML = topicCodeHTML;
+
+           document.getElementById('generate-html').addEventListener('click', function() {
+    const editorContent = editorElement.innerHTML.trim();
+    if (editorContent) {
+        const topicId = "{{ topic.pk }}";
+        const csrfToken = "{{ csrf_token }}";
+
+        fetch(`/update_code_html/${topicId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({ codeHtml: editorContent }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if ("{{ is_edit }}" === "True") {
+                    window.location.href = '/form-edit/'; // Redirect to edit form URL
+                } else {
+                    window.location.href = '/form/'; // Redirect to add form URL
+                }
+            } else {
+                alert('Failed to save content: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving the content.');
+        });
+    } else {
+        alert('Please enter content.');
+    }
+});
+
+
+            window.func = function(button) {
+                const elementType = button.getAttribute('data-element');
+                let elementHtml;
+
+                const selection = window.getSelection();
+                const range = selection.getRangeAt(0);
+                const parentElement = range.startContainer.parentElement;
+
+                switch (elementType) {
+                    case 'heading-one':
+                        if (!parentElement.classList.contains('heading-one')) {
+                            elementHtml = '<div class="heading-one"><br></div>';
+                        }
+                        break;
+                    case 'heading-two':
+                        if (!parentElement.classList.contains('heading-two')) {
+                            elementHtml = '<div class="heading-two"><br></div>';
+                        }
+                        break;
+                    case 'text':
+                        elementHtml = '<div class="text"><br></div>';
+                        break;
+                    case 'image':
+                        insertImage();
+                        break;
+                    case 'code block':
+                        elementHtml = '<div class="outer-container"><i class="fas fa-code code-icon"></i><div class="code-box"><div class="code-content"><br></div></div></div>';
+                        break;
+                    case 'note':
+                        elementHtml = '<div class="note"><br></div>';
+                        break;
+                    case 'table':
+                        insertTable();
+                        break;
+                    case 'list':
+                        insertList();
+                        break;
+                    case 'code-word':
+                        elementHtml = '<code class="code-words"><br></code>';
+                        break;
+                    case 'horizental-line':
+                        elementHtml = '<div class="text"><br><hr><br></div>';
+                        break;
+                    case 'hyper-link':
+                        insertHyperLink();
+                        return;
+                }
+
+                if (elementHtml) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = elementHtml;
+                    const fragment = document.createDocumentFragment();
+                    while (tempDiv.firstChild) {
+                        fragment.appendChild(tempDiv.firstChild);
+                    }
+                    range.insertNode(fragment);
+                    range.collapse();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+            };
+
+            function insertImage() {
+                const imageUrl = prompt('Enter image URL:');
+                if (imageUrl) {
+                    const width = prompt('Enter image width (px):') || 'auto';
+                    const height = prompt('Enter image height (px):') || 'auto';
+                    const caption = prompt('Enter image caption:') || '';
+                    const figureHtml = `<figure><img src="${imageUrl}" alt="${caption}" width="${width}" height="${height}"><figcaption>${caption}</figcaption></figure><br>`;
+                    document.execCommand('insertHTML', false, figureHtml);
+                }
+            }
+
+            function insertTable() {
+                const rowsAndColumns = prompt('Enter rows and columns (comma separated):');
+                const [rows, columns] = rowsAndColumns.split(',').map(Number);
+                if (rows && columns && rows > 0 && columns > 0) {
+                    let tableHtml = '<table>';
+                    for (let i = 0; i < rows; i++) {
+                        tableHtml += '<tr>';
+                        for (let j = 0; j < columns; j++) {
+                            tableHtml += i === 0 ? '<th></th>' : '<td></td>';
+                        }
+                        tableHtml += '</tr>';
+                    }
+                    tableHtml += '</table><br>';
+                    document.execCommand('insertHTML', false, tableHtml);
+                }
+            }
+
+            function insertList() {
+                const numItems = prompt('Enter number of list items:');
+                if (numItems && numItems > 0) {
+                    let listHtml = '<ul>';
+                    for (let i = 0; i < numItems; i++) {
+                        listHtml += '<li></li>';
+                    }
+                    listHtml += '</ul><br>';
+                    document.execCommand('insertHTML', false, listHtml);
+                }
+            }
+
+            function insertHyperLink() {
+                const text = prompt('Enter the text:');
+                const link = prompt('Enter the URL:');
+                if (text && link) {
+                    const linkHtml = `<div class="text"><a href="${link}" target="_blank">${text}</a><br></div>`;
+                    document.execCommand('insertHTML', false, linkHtml);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
